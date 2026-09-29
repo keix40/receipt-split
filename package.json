@@ -13,6 +13,7 @@
     "dev": "next dev",
     "build": "next build",
     "verify:ocr-trace": "node scripts/verify-tesseract-tracing.mjs",
+    "verify:tesseract-ocr": "vitest run tests/unit/tesseract-live.test.ts",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

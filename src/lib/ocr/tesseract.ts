@@ -1,22 +1,16 @@
-import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { parseReceiptText } from "./parse-text";
 import type { ReceiptExtraction } from "./schema";
 
-const require = createRequire(import.meta.url);
-
-/** Paths and cache locations that work when tesseract.js is traced into the serverless bundle. */
+/**
+ * Runtime options for tesseract.js on serverless. Worker/core paths are resolved by
+ * tesseract.js itself (package is in serverExternalPackages); only cache and lang are overridden.
+ */
 export function getTesseractWorkerOptions() {
-  const pkgRoot = path.dirname(require.resolve("tesseract.js/package.json"));
-  const cachePath = path.join(os.tmpdir(), "receipt-split-tesseract");
   return {
-    workerPath: path.join(pkgRoot, "src/worker-script/node/index.js"),
-    corePath: require.resolve("tesseract.js-core/tesseract-core-lstm.wasm.js"),
-    cachePath,
+    cachePath: path.join(os.tmpdir(), "receipt-split-tesseract"),
     langPath: "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int",
-    workerBlobURL: false as const,
-    gzip: true as const,
   };
 }
 
