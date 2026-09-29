@@ -9,17 +9,17 @@ Receipt Split turns a photo of a restaurant receipt into structured line items, 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-> **Live demo:** _coming soon_ (will be deployed on Vercel)
+> **Live demo:** [receipt-split-gamma-sable.vercel.app](https://receipt-split-gamma-sable.vercel.app)
 
 ---
 
 ## Screenshots
 
-> 📸 **PLACEHOLDER: add real screenshots before publishing.**
+> 📸 **Placeholder** — screenshots below are not real product captures yet.
 >
-> | Scan | Review items | Claim & split | Group balances |
+> | Scan (placeholder) | Review items (placeholder) | Claim & split (placeholder) | Group balances (placeholder) |
 > | --- | --- | --- | --- |
-> | `docs/screenshots/scan.png` | `docs/screenshots/review.png` | `docs/screenshots/split.png` | `docs/screenshots/balances.png` |
+> | _pending_ | _pending_ | _pending_ | _pending_ |
 
 ---
 
@@ -109,7 +109,13 @@ If the repo is linked to a Vercel project, `vercel env pull .env.local` fetches 
 | `AI_GATEWAY_API_KEY` | local only | AI Gateway key for local dev. Vercel deployments use OIDC automatically |
 | `OCR_MODEL` | ✅ | Vision-capable model id in `provider/model` form, from the AI Gateway model list |
 | `OCR_FALLBACK` | – | Set to `tesseract` to enable the offline fallback |
+| `OCR_TIMEOUT_MS` | – | Max OCR processing time in ms (default `45000`) |
+| `BLOB_STORE_ID` or `BLOB_STORE_HOST` | ✅ prod | Restricts OCR to your Blob store host (SSRF / abuse) |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | planned | Needed once auth lands (milestone 2) |
+
+### API protection (upload & OCR)
+
+`POST /api/upload` and `POST /api/ocr` require a same-origin `Origin` or `Referer` and apply **in-memory per-IP rate limits** (10 OCR / 20 upload requests per minute per instance). Limits are a free baseline only: they reset on cold starts and are not shared across serverless instances or regions. For strict quotas, use a shared store (e.g. Upstash Redis).
 
 ## Scripts
 
@@ -154,7 +160,7 @@ npm run test:e2e  # end-to-end (starts the dev server)
 ## Roadmap
 
 - [x] **M0: Foundation.** Next.js + TS scaffold, Drizzle schema, split engine with tests, CI
-- [x] **M1: Scan.** Blob upload, vision OCR with zod schema, Tesseract fallback, reconciliation checks
+- [ ] **M1: Scan.** Blob upload, vision OCR with zod schema, Tesseract fallback, reconciliation checks _(blocked on production OCR — enable AI Gateway billing and set `BLOB_STORE_ID` on Vercel)_
 - [ ] **M2: Accounts & groups.** Better Auth, groups, guest members, persist receipts and drafts
 - [ ] **M3: Claim & split.** Editable draft, tap-to-claim (portions), live split preview, finalize to `receipt_shares`
 - [ ] **M4: Balances.** Group ledger, record settlements, simplified who-owes-whom, history

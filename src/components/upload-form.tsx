@@ -2,6 +2,7 @@
 
 import { upload } from "@vercel/blob/client";
 import { useState } from "react";
+import { readApiErrorMessage } from "@/lib/api/read-error-response";
 import { formatMoney } from "@/lib/money";
 import type { ReceiptDraft, ValidationIssue } from "@/lib/ocr/normalize";
 
@@ -50,8 +51,7 @@ export function UploadForm() {
         body: JSON.stringify({ imageUrl: blob.url }),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? `OCR failed (${res.status})`);
+        throw new Error(await readApiErrorMessage(res));
       }
       setStatus({ kind: "done", result: (await res.json()) as OcrResponse });
     } catch (err) {
