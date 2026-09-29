@@ -17,9 +17,16 @@ export default defineConfig({
     { name: "mobile-safari", use: { ...devices["iPhone 15"] } },
   ],
   webServer: {
-    command: "npm run dev",
+    // Production server matches Vercel tracing; dev/Turbopack breaks tesseract worker paths.
+    command: process.env.CI ? "npm run start" : "npm run dev",
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: process.env.CI ? 60_000 : 120_000,
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL ?? "",
+      OCR_FALLBACK: process.env.OCR_FALLBACK ?? "tesseract",
+      E2E_TEST: process.env.E2E_TEST ?? "1",
+    },
   },
 });
