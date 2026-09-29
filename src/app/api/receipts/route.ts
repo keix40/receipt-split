@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardWriteRequest } from "@/lib/api/write-guard";
 import { saveReceiptSchema } from "@/lib/receipt/schemas";
+import { rememberGroupId } from "@/lib/guest/cookies";
 import { createReceiptFromDraft } from "@/lib/receipt/service";
 import { isAllowedImageUrl } from "@/lib/security/blob-url";
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
 
   try {
     const receipt = await createReceiptFromDraft(parsed.data);
+    await rememberGroupId(receipt.groupId);
     return NextResponse.json({ shareToken: receipt.shareToken, groupId: receipt.groupId });
   } catch (error) {
     console.error("[receipts] create failed", error);
