@@ -20,6 +20,9 @@ export function getTesseractWorkerOptions() {
 }
 
 async function loadImageBytes(imageUrl: string): Promise<Buffer> {
+  if (!/^https?:\/\//i.test(imageUrl)) {
+    return readFile(imageUrl);
+  }
   const url = new URL(imageUrl);
   if (process.env.E2E_TEST === "1" && url.pathname.startsWith("/e2e-staged/")) {
     const filePath = path.join(process.cwd(), "public", url.pathname);
