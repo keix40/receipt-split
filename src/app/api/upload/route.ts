@@ -1,5 +1,8 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
+import { guardApiRequest } from "@/lib/api/guard";
+
+const UPLOAD_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 
 /**
  * Issues short-lived client-upload tokens for Vercel Blob so images go
@@ -7,7 +10,16 @@ import { NextResponse } from "next/server";
  * TODO(milestone 2): require an authenticated session in onBeforeGenerateToken.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
+  const blocked = guardApiRequest(request, "upload", UPLOAD_RATE_LIMIT);
+  if (blocked) return blocked;
+
+  let body: HandleUploadBody;
+  try {
+    body = (await request.json()) as HandleUploadBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
   try {
     const json = await handleUpload({
       body,
@@ -17,7 +29,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         maximumSizeInBytes: 10 * 1024 * 1024,
         addRandomSuffix: true,
       }),
-      // Not called on localhost (Blob can't reach your machine); fine for the starter.
       onUploadCompleted: async ({ blob }) => {
         console.info("[upload] stored", blob.pathname);
       },
