@@ -7,8 +7,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/unit/**/*.test.ts"],
-    exclude: ["tests/unit/tesseract-live.test.ts"],
-    coverage: { include: ["src/lib/**"] },
+    include: ["tests/unit/tesseract-live.test.ts"],
   },
 });
