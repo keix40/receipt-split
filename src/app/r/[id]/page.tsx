@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ReceiptRoom } from "@/components/receipt-room";
 import { getMemberIdForReceipt } from "@/lib/guest/cookies";
+import { parseShareTokenParam } from "@/lib/ids";
 import { getReceiptByShareToken } from "@/lib/receipt/service";
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  if (!parseShareTokenParam(id)) return { title: "Receipt split" };
   const bundle = await getReceiptByShareToken(id);
   return { title: bundle?.receipt.merchant ? `${bundle.receipt.merchant} · Split` : "Receipt split" };
 }
 
 export default async function ReceiptPage({ params }: Props) {
   const { id: shareToken } = await params;
+  if (!parseShareTokenParam(shareToken)) notFound();
   const bundle = await getReceiptByShareToken(shareToken);
   if (!bundle) notFound();
 

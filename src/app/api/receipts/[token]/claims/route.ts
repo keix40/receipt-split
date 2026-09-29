@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { guardWriteRequest } from "@/lib/api/write-guard";
 import { getMemberIdForReceipt } from "@/lib/guest/cookies";
 import { claimItemSchema } from "@/lib/receipt/schemas";
+import { parseShareTokenParam } from "@/lib/ids";
 import { mutateClaim } from "@/lib/receipt/service";
 
 export const runtime = "nodejs";
@@ -13,6 +14,10 @@ export async function POST(request: Request, { params }: Params) {
   if (blocked) return blocked;
 
   const { token } = await params;
+  if (!parseShareTokenParam(token)) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
   const memberId = await getMemberIdForReceipt(token);
   if (!memberId) {
     return NextResponse.json({ error: "join_first" }, { status: 401 });

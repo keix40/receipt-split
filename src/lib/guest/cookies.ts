@@ -2,21 +2,34 @@ import { cookies } from "next/headers";
 
 const GROUPS_COOKIE = "rs_groups";
 const MEMBER_PREFIX = "rs_member_";
+const GROUP_MEMBER_PREFIX = "rs_group_member_";
 
 export async function getMemberIdForReceipt(shareToken: string): Promise<string | null> {
   const jar = await cookies();
   return jar.get(`${MEMBER_PREFIX}${shareToken}`)?.value ?? null;
 }
 
+const memberCookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+};
+
+export async function getMemberIdForGroup(groupId: string): Promise<string | null> {
+  const jar = await cookies();
+  return jar.get(`${GROUP_MEMBER_PREFIX}${groupId}`)?.value ?? null;
+}
+
+export async function setMemberForGroup(groupId: string, memberId: string): Promise<void> {
+  const jar = await cookies();
+  jar.set(`${GROUP_MEMBER_PREFIX}${groupId}`, memberId, memberCookieOptions);
+}
+
 export async function setMemberForReceipt(shareToken: string, memberId: string): Promise<void> {
   const jar = await cookies();
-  jar.set(`${MEMBER_PREFIX}${shareToken}`, memberId, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  jar.set(`${MEMBER_PREFIX}${shareToken}`, memberId, memberCookieOptions);
 }
 
 export async function getKnownGroupIds(): Promise<string[]> {

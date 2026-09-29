@@ -9,6 +9,7 @@ import { formatMoney } from "@/lib/money";
 export type GroupDashboardProps = {
   groupId: string;
   groupName: string;
+  inviteLink?: string;
   currency: string;
   members: { id: string; displayName: string }[];
   receipts: {
@@ -20,6 +21,7 @@ export type GroupDashboardProps = {
   }[];
   balances: { memberId: string; cents: number }[];
   transfers: { from: string; to: string; amountCents: number }[];
+  canSettle?: boolean;
 };
 
 export function GroupDashboard(props: GroupDashboardProps) {
@@ -60,6 +62,14 @@ export function GroupDashboard(props: GroupDashboardProps) {
       <header>
         <h1 className="text-3xl font-bold tracking-tight">{props.groupName}</h1>
         <p className="text-stone-600 dark:text-stone-400">Running balances from finalized receipts and settlements.</p>
+        {props.inviteLink && (
+          <p className="text-sm text-stone-500">
+            Share view-only link:{" "}
+            <a href={props.inviteLink} className="break-all underline">
+              {props.inviteLink}
+            </a>
+          </p>
+        )}
       </header>
 
       <section>
@@ -112,7 +122,7 @@ export function GroupDashboard(props: GroupDashboardProps) {
         )}
       </section>
 
-      {props.members.length >= 2 && (
+      {props.canSettle !== false && props.members.length >= 2 && (
         <section className="rounded-xl border p-4 dark:border-stone-700">
           <h2 className="mb-3 font-semibold">Record a settlement</h2>
           <form onSubmit={(e) => void recordSettlement(e)} className="flex flex-col gap-3">

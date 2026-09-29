@@ -1,19 +1,29 @@
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import { rememberGroupId } from "@/lib/guest/cookies";
+import { parseUuidParam } from "@/lib/ids";
 import { computeNetBalances, simplifyDebts, type LedgerEntry } from "@/lib/split";
+import { newShareToken } from "@/lib/tokens";
 
-export async function createGroup(name: string, currency: string) {
+export async function createGroup(name: string, currency: string, displayName = "Host") {
   const db = getDb();
-  const [group] = await db
-    .insert(schema.groups)
-    .values({ name, currency: currency.toUpperCase() })
-    .returning();
-  await rememberGroupId(group.id);
-  return group;
+  const inviteToken = newShareToken();
+
+  return db.transaction(async (tx) => {
+    const [group] = await tx
+      .insert(schema.groups)
+      .values({ name, currency: currency.toUpperCase(), inviteToken })
+      .returning();
+    const [member] = await tx
+      .insert(schema.groupMembers)
+      .values({ groupId: group.id, displayName })
+      .returning({ id: schema.groupMembers.id });
+    return { group, memberId: member.id };
+  });
 }
 
 export async function getGroupBundle(groupId: string) {
+  if (!parseUuidParam(groupId)) return null;
+
   const db = getDb();
   const [group] = await db.select().from(schema.groups).where(eq(schema.groups.id, groupId)).limit(1);
   if (!group) return null;
@@ -119,7 +129,8 @@ export async function recordSettlement(
 }
 
 export async function listGroupsByIds(ids: string[]) {
-  if (ids.length === 0) return [];
+  const valid = ids.filter((id) => parseUuidParam(id));
+  if (valid.length === 0) return [];
   const db = getDb();
-  return db.select().from(schema.groups).where(inArray(schema.groups.id, ids)).orderBy(desc(schema.groups.createdAt));
+  return db.select().from(schema.groups).where(inArray(schema.groups.id, valid)).orderBy(desc(schema.groups.createdAt));
 }

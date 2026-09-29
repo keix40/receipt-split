@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardWriteRequest } from "@/lib/api/write-guard";
 import { finalizeReceiptSchema } from "@/lib/receipt/schemas";
+import { parseShareTokenParam } from "@/lib/ids";
 import { finalizeReceipt } from "@/lib/receipt/service";
 
 export const runtime = "nodejs";
@@ -12,6 +13,10 @@ export async function POST(request: Request, { params }: Params) {
   if (blocked) return blocked;
 
   const { token } = await params;
+  if (!parseShareTokenParam(token)) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
   const parsed = finalizeReceiptSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "paidByMemberId is required" }, { status: 400 });

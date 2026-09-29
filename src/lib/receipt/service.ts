@@ -1,9 +1,10 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import { rememberGroupId, setMemberForReceipt } from "@/lib/guest/cookies";
+import { setMemberForGroup, setMemberForReceipt } from "@/lib/guest/cookies";
+import { parseShareTokenParam } from "@/lib/ids";
+import { newShareToken } from "@/lib/tokens";
 import { buildSplitInput } from "@/lib/receipt/split-from-db";
 import { splitReceipt } from "@/lib/split";
-import { newShareToken } from "@/lib/tokens";
 import type { saveReceiptSchema } from "@/lib/receipt/schemas";
 import type { z } from "zod";
 
@@ -21,6 +22,7 @@ export async function createReceiptFromDraft(input: SaveInput) {
         .values({
           name: input.groupName?.trim() || input.merchant?.trim() || "Receipt split",
           currency: input.currency.toUpperCase(),
+          inviteToken: newShareToken(),
         })
         .returning({ id: schema.groups.id });
       groupId = group.id;
@@ -56,12 +58,13 @@ export async function createReceiptFromDraft(input: SaveInput) {
       })),
     );
 
-    await rememberGroupId(groupId);
     return receipt;
   });
 }
 
 export async function getReceiptByShareToken(shareToken: string) {
+  if (!parseShareTokenParam(shareToken)) return null;
+
   const db = getDb();
   const [receipt] = await db.select().from(schema.receipts).where(eq(schema.receipts.shareToken, shareToken)).limit(1);
   if (!receipt) return null;
@@ -107,8 +110,8 @@ export async function joinReceiptAsGuest(shareToken: string, displayName: string
     .returning({ id: schema.groupMembers.id });
 
   await setMemberForReceipt(shareToken, member.id);
-  await rememberGroupId(bundle.receipt.groupId);
-  return { memberId: member.id };
+  await setMemberForGroup(bundle.receipt.groupId, member.id);
+  return { memberId: member.id, groupId: bundle.receipt.groupId };
 }
 
 export async function mutateClaim(

@@ -34,14 +34,20 @@ export const users = pgTable("users", {
   createdAt,
 });
 
-export const groups = pgTable("groups", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  /** Default ISO 4217 currency for the group's receipts. */
-  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
-  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt,
-});
+export const groups = pgTable(
+  "groups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Unguessable token for read-only group access (?invite=). */
+    inviteToken: varchar("invite_token", { length: 64 }).notNull(),
+    name: text("name").notNull(),
+    /** Default ISO 4217 currency for the group's receipts. */
+    currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt,
+  },
+  (t) => [uniqueIndex("groups_invite_token_uq").on(t.inviteToken)],
+);
 
 /**
  * Members may be registered users or guests (userId null) so friends can be
