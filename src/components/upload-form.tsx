@@ -3,7 +3,7 @@
 import { upload } from "@vercel/blob/client";
 import { useState } from "react";
 import { readApiErrorMessage } from "@/lib/api/read-error-response";
-import { formatMoney } from "@/lib/money";
+import { ReceiptReviewForm } from "@/components/receipt-review-form";
 import type { ReceiptDraft, ValidationIssue } from "@/lib/ocr/normalize";
 
 type OcrResponse = {
@@ -39,16 +39,27 @@ export function UploadForm() {
 
     try {
       setStatus({ kind: "uploading" });
-      const blob = await upload(`receipts/${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
+      let imageUrl: string;
+      const stageBody = new FormData();
+      stageBody.set("file", file);
+      const staged = await fetch("/api/e2e/stage-image", { method: "POST", body: stageBody });
+      if (staged.ok) {
+        imageUrl = ((await staged.json()) as { imageUrl: string }).imageUrl;
+      } else if (staged.status === 404) {
+        const blob = await upload(`receipts/${file.name}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+        });
+        imageUrl = blob.url;
+      } else {
+        throw new Error(await readApiErrorMessage(staged));
+      }
 
       setStatus({ kind: "reading" });
       const res = await fetch("/api/ocr", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ imageUrl: blob.url }),
+        body: JSON.stringify({ imageUrl }),
       });
       if (!res.ok) {
         throw new Error(await readApiErrorMessage(res));
@@ -95,69 +106,14 @@ export function UploadForm() {
         <img src={preview} alt="Receipt preview" className="max-h-80 w-fit rounded-lg border object-contain" />
       )}
 
-      {status.kind === "done" && <DraftTable result={status.result} />}
-    </div>
-  );
-}
-
-function DraftTable({ result }: { result: OcrResponse }) {
-  const { draft, issues, source } = result;
-  const fmt = (c: number) => formatMoney(c, draft.currency);
-  const rows: Array<[string, number | null]> = [
-    ["Subtotal", draft.subtotalCents],
-    ["Tax", draft.taxCents],
-    ["Tip", draft.tipCents],
-    ["Service charge", draft.serviceChargeCents],
-    ["Discount", draft.discountCents ? -draft.discountCents : 0],
-    ["Total", draft.totalCents],
-  ];
-
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">
-        {draft.merchant ?? "Receipt"}{" "}
-        <span className="text-sm font-normal text-stone-500">via {source === "vision" ? "AI vision" : "offline OCR"}</span>
-      </h2>
-
-      {issues.length > 0 && (
-        <ul className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
-          {issues.map((issue, i) => (
-            <li key={i}>⚠ {issue.message}</li>
-          ))}
-        </ul>
+      {status.kind === "done" && (
+        <ReceiptReviewForm
+          imageUrl={status.result.imageUrl}
+          source={status.result.source}
+          initialDraft={status.result.draft}
+          initialIssues={status.result.issues}
+        />
       )}
-
-      <table className="w-full text-left text-sm">
-        <thead className="border-b text-stone-500">
-          <tr>
-            <th className="py-2">Item</th>
-            <th className="py-2 text-right">Qty</th>
-            <th className="py-2 text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {draft.items.map((item) => (
-            <tr key={item.position} className="border-b border-stone-100 dark:border-stone-800">
-              <td className="py-2">{item.name}</td>
-              <td className="py-2 text-right">{item.quantity}</td>
-              <td className="py-2 text-right tabular-nums">{fmt(item.totalCents)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          {rows
-            .filter(([, v]) => v != null && v !== 0)
-            .map(([label, v]) => (
-              <tr key={label}>
-                <td className="py-1 text-stone-500" colSpan={2}>
-                  {label}
-                </td>
-                <td className="py-1 text-right tabular-nums">{fmt(v as number)}</td>
-              </tr>
-            ))}
-        </tfoot>
-      </table>
-      <p className="text-sm text-stone-500">Next step (milestone 2): add friends and tap who had what.</p>
-    </section>
+    </div>
   );
 }
