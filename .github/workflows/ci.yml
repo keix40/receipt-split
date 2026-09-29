@@ -8,6 +8,25 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: receipt
+          POSTGRES_PASSWORD: receipt
+          POSTGRES_DB: receipt_split
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U receipt -d receipt_split"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://receipt:receipt@localhost:5432/receipt_split
+      DATABASE_URL_UNPOOLED: postgresql://receipt:receipt@localhost:5432/receipt_split
+      OCR_FALLBACK: tesseract
+      E2E_TEST: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,10 +34,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run db:migrate
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
       - run: npm run verify:ocr-trace
-      - run: npx playwright install chromium --with-deps
-      - run: npm run verify:tesseract-ocr
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+      - run: npm run test:e2e -- --project=chromium
+        env:
+          CI: "1"
