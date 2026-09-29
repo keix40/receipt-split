@@ -71,6 +71,8 @@ export const receipts = pgTable(
   "receipts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    /** Unguessable token used in share URLs (/r/[shareToken]). */
+    shareToken: varchar("share_token", { length: 64 }).notNull().unique(),
     groupId: uuid("group_id")
       .notNull()
       .references(() => groups.id, { onDelete: "cascade" }),
