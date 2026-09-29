@@ -19,6 +19,7 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+public/e2e-staged/
 
 # misc
 .DS_Store

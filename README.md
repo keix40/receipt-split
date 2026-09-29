@@ -15,11 +15,11 @@ Receipt Split turns a photo of a restaurant receipt into structured line items, 
 
 ## Screenshots
 
-> 📸 **Placeholder** — screenshots below are not real product captures yet.
->
-> | Scan (placeholder) | Review items (placeholder) | Claim & split (placeholder) | Group balances (placeholder) |
-> | --- | --- | --- | --- |
-> | _pending_ | _pending_ | _pending_ | _pending_ |
+Captured by Playwright during CI (`tests/e2e/`).
+
+| Scan | Review items | Claim & split | Group balances |
+| --- | --- | --- | --- |
+| ![Scan a receipt](./docs/screenshots/01-scan.png) | ![Review OCR draft](./docs/screenshots/02-review-items.png) | ![Tap to claim](./docs/screenshots/03-claim-split.png) | ![Group ledger](./docs/screenshots/04-group-balances.png) |
 
 ---
 
@@ -44,7 +44,7 @@ Receipt Split turns a photo of a restaurant receipt into structured line items, 
 | Storage | Vercel Blob (direct client uploads) |
 | Validation | Zod 4 (shared by API input, LLM output and forms) |
 | UI | Tailwind CSS v4 + shadcn/ui |
-| Auth (planned) | Better Auth (email magic link + OAuth) |
+| Auth | **Better Auth (planned)** — email magic link + OAuth; guests use cookies today |
 | Testing | Vitest (unit/property tests), Playwright (e2e) |
 | CI | GitHub Actions: lint, typecheck, test |
 
@@ -111,7 +111,8 @@ If the repo is linked to a Vercel project, `vercel env pull .env.local` fetches 
 | `OCR_FALLBACK` | – | Set to `tesseract` to enable the offline fallback |
 | `OCR_TIMEOUT_MS` | – | Max OCR processing time in ms (default `45000`) |
 | `BLOB_STORE_ID` or `BLOB_STORE_HOST` | ✅ prod | Restricts OCR to your Blob store host (SSRF / abuse) |
-| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | planned | Needed once auth lands (milestone 2) |
+| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | planned | Needed once Better Auth lands |
+| `E2E_TEST` | CI only | Enables `/api/e2e/stage-image` and local OCR fixtures for Playwright |
 
 ### API protection (upload & OCR)
 
@@ -143,8 +144,10 @@ The split engine and OCR post-processing have unit tests, including seeded prope
 
 ```bash
 npm test          # unit
-npm run test:e2e  # end-to-end (starts the dev server)
+npm run test:e2e  # end-to-end (CI uses `npm start` after build; needs Postgres + E2E_TEST=1)
 ```
+
+CI runs `npm run db:migrate` against a Postgres service container, then Playwright with `OCR_FALLBACK=tesseract`.
 
 ## Deployment (Vercel)
 
@@ -160,12 +163,12 @@ npm run test:e2e  # end-to-end (starts the dev server)
 ## Roadmap
 
 - [x] **M0: Foundation.** Next.js + TS scaffold, Drizzle schema, split engine with tests, CI
-- [ ] **M1: Scan.** Blob upload, vision OCR with zod schema, Tesseract fallback, reconciliation checks _(blocked on production OCR — enable AI Gateway billing and set `BLOB_STORE_ID` on Vercel)_
-- [ ] **M2: Accounts & groups.** Better Auth, groups, guest members, persist receipts and drafts
-- [ ] **M3: Claim & split.** Editable draft, tap-to-claim (portions), live split preview, finalize to `receipt_shares`
-- [ ] **M4: Balances.** Group ledger, record settlements, simplified who-owes-whom, history
-- [ ] **M5: Polish.** Share links for guests, real-time claiming, PWA/offline, rate limiting, i18n and multi-currency groups
-- [ ] **M6: Launch.** Screenshots, demo video, OCR accuracy eval set, write-up
+- [x] **M1: Scan & persist.** Blob upload (or CI fixture upload), vision OCR + Tesseract fallback, review/edit, save to Postgres, share links
+- [x] **M2: Guests & groups.** Cookie-backed guest members, groups list, running ledger (no Better Auth yet)
+- [x] **M3: Claim & split.** Tap-to-claim, live split preview, finalize to immutable `receipt_shares`
+- [x] **M4: Balances.** Net balances, debt simplification, record settlements
+- [ ] **M5: Polish.** Better Auth accounts, real-time claiming, PWA/offline, shared rate-limit store, i18n
+- [ ] **M6: Launch.** Demo video, OCR accuracy eval set, write-up
 
 ## License
 

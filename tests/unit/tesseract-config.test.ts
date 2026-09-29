@@ -12,4 +12,10 @@ describe("tesseract worker options", () => {
     expect(opts.cachePath).toContain("receipt-split-tesseract");
     expect(opts.langPath).toMatch(/^https:\/\//);
   });
+
+  it("does not set workerPath or corePath (tesseract.js resolves them; bundled require.resolve is unsafe)", () => {
+    const opts = getTesseractWorkerOptions();
+    expect("workerPath" in opts).toBe(false);
+    expect("corePath" in opts).toBe(false);
+  });
 });

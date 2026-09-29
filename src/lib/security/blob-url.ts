@@ -23,6 +23,12 @@ export function isAllowedImageUrl(raw: string): boolean {
   } catch {
     return false;
   }
+  if (process.env.E2E_TEST === "1" && url.protocol === "http:") {
+    const host = url.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1") {
+      return url.pathname.startsWith("/e2e-staged/");
+    }
+  }
   if (url.protocol !== "https:") return false;
 
   const allowedHost = getBlobStoreHost();
