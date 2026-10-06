@@ -17,6 +17,8 @@ const requiredSubstrings = [
   "tesseract.js/src/worker-script/node/index.js",
   "tesseract.js/src/worker-script/index.js",
   "tesseract.js-core/tesseract-core",
+  "tessdata/mya.traineddata.gz",
+  "tessdata/eng.traineddata.gz",
 ];
 
 const missing = requiredSubstrings.filter((needle) => !files.some((f) => f.includes(needle)));

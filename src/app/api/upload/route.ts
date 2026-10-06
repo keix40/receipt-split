@@ -10,14 +10,19 @@ const UPLOAD_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
  * TODO(milestone 2): require an authenticated session in onBeforeGenerateToken.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const blocked = guardApiRequest(request, "upload", UPLOAD_RATE_LIMIT);
-  if (blocked) return blocked;
-
   let body: HandleUploadBody;
   try {
     body = (await request.json()) as HandleUploadBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  // Only the browser's token request is same-origin. The `blob.upload-completed` callback
+  // comes server-to-server from Vercel Blob with no Origin/Referer; handleUpload verifies
+  // its signature instead, so the same-origin guard must not run for it (it returned 403).
+  if (body?.type !== "blob.upload-completed") {
+    const blocked = guardApiRequest(request, "upload", UPLOAD_RATE_LIMIT);
+    if (blocked) return blocked;
   }
 
   try {

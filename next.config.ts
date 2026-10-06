@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["tesseract.js", "tesseract.js-core"],
   outputFileTracingIncludes: {
     "/api/ocr": [
+      // Bundled mya + eng traineddata (no CDN download on cold start).
+      "./tessdata/*.traineddata.gz",
       "./node_modules/tesseract.js/**/*",
       "./node_modules/tesseract.js-core/**/*",
       "./node_modules/wasm-feature-detect/**/*",
