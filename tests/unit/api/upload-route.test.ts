@@ -44,3 +44,32 @@ describe("POST /api/upload", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("POST /api/upload – Blob completion callback", () => {
+  it("does not apply the same-origin guard to signed blob.upload-completed callbacks", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const res = await POST(
+      new Request("https://app.test/api/upload", {
+        method: "POST",
+        headers: { host: "app.test", "content-type": "application/json", "x-vercel-signature": "sig" },
+        body: JSON.stringify({
+          type: "blob.upload-completed",
+          payload: { blob: { url: "https://x.public.blob.vercel-storage.com/a.png", pathname: "a.png" }, tokenPayload: null },
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("still rejects cross-origin token requests", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const res = await POST(
+      new Request("https://app.test/api/upload", {
+        method: "POST",
+        headers: { host: "app.test", "content-type": "application/json" },
+        body: JSON.stringify({ type: "blob.generate-client-token", payload: { pathname: "a.png" } }),
+      }),
+    );
+    expect(res.status).toBe(403);
+  });
+});
